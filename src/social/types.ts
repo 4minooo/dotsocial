@@ -68,6 +68,6 @@ export interface Backend {
   move(point: Point, rotation: number): Promise<void>;
   emote(kind: Emote): Promise<void>;
   chat(text: string): Promise<void>;
-  invite(guest: Player, type: Game["type"]): Promise<void>;
+  invite(guest: Player, type: Game["type"], rematchId?: string): Promise<void>;
   mutate(id: string, change: (game: Game) => Game): Promise<void>;
 }

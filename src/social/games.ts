@@ -92,6 +92,53 @@ export function putStone(
 export function inGame(game: Game, uid: string) {
   return game.host === uid || game.guest === uid;
 }
+// Finished matches and Gomoku turn expiry share one result calculation.
+export function gameWinner(game: Game, now: number): string | null {
+  if (!["active", "finished"].includes(game.status)) return null;
+  if (game.type === "gomoku") {
+    const winner = gomokuWinner(game.board, game.host);
+    if (winner) return winner;
+    return game.status === "active" && now >= game.deadline
+      ? game.next % 2 === 0
+        ? game.guest
+        : game.host
+      : null;
+  }
+  const a = game.reveals?.[game.host],
+    b = game.reveals?.[game.guest];
+  if (!a || !b) return null;
+  const result = rpsResult(a.choice, b.choice);
+  return result === "draw" ? null : result === "host" ? game.host : game.guest;
+}
+export function assertRematchAllowed(
+  games: Game[],
+  host: Player,
+  guest: Player,
+  type: Game["type"],
+  now: number,
+  rematchId?: string,
+) {
+  const latest = games
+    .filter(
+      (g) =>
+        g &&
+        g.type === type &&
+        ((g.host === host.uid &&
+          g.hostSession === host.session &&
+          g.guest === guest.uid &&
+          g.guestSession === guest.session) ||
+          (g.guest === host.uid &&
+            g.guestSession === host.session &&
+            g.host === guest.uid &&
+            g.hostSession === guest.session)),
+    )
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+  const winner = latest ? gameWinner(latest, now) : null;
+  if (rematchId && (latest?.id !== rematchId || !winner))
+    throw new Error("재대결할 승패 결과가 없어요.");
+  if (winner === host.uid)
+    throw new Error("재대결은 패배한 참가자만 신청할 수 있어요.");
+}
 export function liveGame(
   game: Game,
   players: Record<string, Player>,

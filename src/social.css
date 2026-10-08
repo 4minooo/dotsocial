@@ -662,3 +662,127 @@
     grid-template-rows: repeat(2, 42px);
   }
 }
+.sound-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #dfe7e0;
+  border-radius: 20px;
+  background: #fff;
+  color: #577766;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sound-control[aria-pressed="false"] {
+  color: #8c9490;
+}
+.match-result {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 15px 0;
+  padding: 18px;
+  border: 1px solid #f1cb70;
+  border-radius: 18px;
+  background: linear-gradient(125deg, #fff7d9, #ffeccd);
+  animation: result-arrive 0.45s ease-out;
+}
+.match-result.lose {
+  background: linear-gradient(125deg, #edf4ff, #f0f7f2);
+  border-color: #ccdceb;
+}
+.result-icon {
+  font-size: 48px;
+  filter: drop-shadow(0 5px 5px #ba902c25);
+  animation: trophy-pop 0.65s ease-out;
+  z-index: 1;
+}
+.match-result strong {
+  font-size: 26px;
+  color: #95641b;
+}
+.match-result.lose strong {
+  color: #587794;
+}
+.match-result p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6f756d;
+}
+.match-result > div:not(.result-confetti) {
+  z-index: 1;
+}
+.result-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.result-confetti i {
+  position: absolute;
+  top: -12px;
+  width: 6px;
+  height: 12px;
+  border-radius: 2px;
+  animation: result-fall 1.7s ease-in 2;
+}
+@keyframes result-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes trophy-pop {
+  0% {
+    transform: scale(0.3) rotate(-18deg);
+  }
+  65% {
+    transform: scale(1.2) rotate(8deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes result-fall {
+  to {
+    transform: translateY(160px) rotate(230deg);
+    opacity: 0;
+  }
+}
+@media (max-width: 600px) {
+  .sound-control {
+    padding: 8px;
+  }
+  .sound-control span {
+    display: none;
+  }
+  .match-result {
+    padding: 12px;
+    margin: 10px 0;
+  }
+  .result-icon {
+    font-size: 36px;
+  }
+  .match-result strong {
+    font-size: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .match-result,
+  .result-icon,
+  .result-confetti i {
+    animation: none;
+  }
+  .result-confetti {
+    display: none;
+  }
+}

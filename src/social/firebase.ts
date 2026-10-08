@@ -21,7 +21,7 @@ import {
 } from "firebase/database";
 import { maps, spawn, type Profile, type Point } from "../model";
 import type { Emote } from "../emotes";
-import { createGame, inGame, liveGame } from "./games";
+import { assertRematchAllowed, createGame, inGame, liveGame } from "./games";
 import {
   emptyRoom,
   type Backend,
@@ -369,11 +369,19 @@ export class FirebaseBackend implements Backend {
     );
     this.lastChat = this.now();
   }
-  async invite(guest: Player, type: Game["type"]) {
+  async invite(guest: Player, type: Game["type"], rematchId?: string) {
     if (!this.player || !this.connected)
       throw new Error("연결 후 다시 시도해 주세요.");
     const state =
       (await get(ref(this.db, `rooms/${this.room}/games`))).val() ?? {};
+    assertRematchAllowed(
+      Object.values(state),
+      this.player,
+      guest,
+      type,
+      this.now(),
+      rematchId,
+    );
     const players =
       (await get(ref(this.db, `rooms/${this.room}/players`))).val() ?? {};
     const flat = Object.fromEntries(

@@ -4,12 +4,14 @@ import {
   choices,
   commitment,
   gomokuWinner,
+  gameWinner,
   putStone,
   salt,
   verifiedResult,
   TURN_MS,
 } from "./social/games";
 import type { Backend, Choice, Game, Player } from "./social/types";
+import { sound } from "./sound";
 export default function GamePanel({
   game,
   backend,
@@ -26,6 +28,7 @@ export default function GamePanel({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false),
+    [verified, setVerified] = useState(false),
     [result, setResult] = useState<string | null>(null),
     revealBusy = useRef(false),
     finishBusy = useRef(false);
@@ -57,6 +60,7 @@ export default function GamePanel({
     let alive = true;
     void verifiedResult(game)
       .then((r) => {
+        if (alive) setVerified(true);
         if (alive)
           setResult(
             r === "draw"
@@ -76,6 +80,7 @@ export default function GamePanel({
         }
       })
       .catch((e) => {
+        if (alive) setVerified(false);
         if (alive) setResult(e.message);
       });
     return () => {
@@ -131,7 +136,7 @@ export default function GamePanel({
           ...g,
           status: host ? "cancelled" : "declined",
         }));
-      else if (game.status === "active" && !expired)
+      else if (game.status === "active" && !expired && !winnerUid)
         await backend.mutate(game.id, (g) => ({ ...g, status: "aborted" }));
       sessionStorage.removeItem(secretKey);
       onClose();
@@ -151,6 +156,14 @@ export default function GamePanel({
   const winner = gomokuWinner(game.board, game.host),
     mine = game.next % 2 === 0 ? game.host === uid : game.guest === uid;
   const title = game.type === "rps" ? "가위바위보" : "오목";
+  const winnerUid =
+    peerPresent && (game.type === "gomoku" || verified)
+      ? gameWinner(game, now)
+      : null;
+  const outcome = winnerUid ? (winnerUid === uid ? "win" : "lose") : null;
+  useEffect(() => {
+    if (outcome) sound.result(game.id, outcome);
+  }, [game.id, outcome]);
   return (
     <div className="modal-backdrop">
       <section
@@ -174,6 +187,41 @@ export default function GamePanel({
           {host ? "당신이 먼저" : "상대가 먼저"} ·{" "}
           {game.type === "gomoku" ? "15×15 렌주 금수 · 착수 10초" : "1대1 단판"}
         </p>
+        {outcome && (
+          <div
+            className={`match-result ${outcome}`}
+            role="status"
+            aria-label={outcome === "win" ? "승리" : "패배"}
+          >
+            {outcome === "win" && (
+              <div className="result-confetti" aria-hidden="true">
+                {Array.from({ length: 18 }, (_, i) => (
+                  <i
+                    key={i}
+                    style={{
+                      left: `${5 + i * 5}%`,
+                      animationDelay: `${(i % 6) * 0.09}s`,
+                      background: ["#ffa744", "#80cda8", "#ef88b2", "#95bff4"][
+                        i % 4
+                      ],
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <span className="result-icon" aria-hidden="true">
+              {outcome === "win" ? "🏆" : "🌱"}
+            </span>
+            <div>
+              <strong>{outcome === "win" ? "승리!" : "아쉬운 패배"}</strong>
+              <p>
+                {outcome === "win"
+                  ? "멋진 한 판이었어요!"
+                  : "다음 한 판은 내 차례!"}
+              </p>
+            </div>
+          </div>
+        )}
         {!peerPresent ? (
           <div className="game-result">상대방이 공간을 떠났어요.</div>
         ) : expired && ["active", "invited"].includes(game.status) ? (
@@ -300,13 +348,13 @@ export default function GamePanel({
               ? `${Math.max(0, Math.ceil((game.deadline - now) / 1000))}초 남음`
               : "게임 종료"}
           </span>
-          {!active && game.status !== "invited" && peer && (
+          {outcome === "lose" && peerPresent && peer && (
             <button
               className="secondary-button"
               disabled={busy}
               onClick={() =>
                 run(async () => {
-                  await backend.invite(peer, game.type);
+                  await backend.invite(peer, game.type, game.id);
                   onClose();
                 })
               }

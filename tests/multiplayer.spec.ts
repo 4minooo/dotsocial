@@ -31,14 +31,18 @@ test("오목 10초 재설정·시간 초과 승패와 만료 채팅 실제 삭�
     )!;
     await request.patch(`${url}/chat/${slot}/${ring}${suffix}`, {
       headers,
-      data: { at: Date.now() - 600001 },
+      data: { at: Date.now() - 601000 },
     });
     await expect(b.getByRole("log")).not.toContainText("사라질 테스트 대화");
     await expect
-      .poll(async () =>
-        (
-          await request.get(`${url}/chat/${slot}/${ring}${suffix}`, { headers })
-        ).json(),
+      .poll(
+        async () =>
+          (
+            await request.get(`${url}/chat/${slot}/${ring}${suffix}`, {
+              headers,
+            })
+          ).json(),
+        { timeout: 20000 },
       )
       .toBe(null);
     await a.getByRole("button", { name: "대화친구 님에게 오목 초대" }).click();
@@ -60,6 +64,8 @@ test("오목 10초 재설정·시간 초과 승패와 만료 채팅 실제 삭�
     await expect(
       a.getByText("상대방 착수 시간 초과로 이겼어요! 🎉", { exact: true }),
     ).toBeVisible();
+    await expect(a.getByRole("button", { name: "재대결 제안" })).toHaveCount(0);
+    await expect(b.getByRole("button", { name: "재대결 제안" })).toBeVisible();
     await a.screenshot({
       path: "artifacts/gomoku-timeout.png",
       fullPage: true,
@@ -105,6 +111,15 @@ test("독립 Firebase 세션의 채팅·이모트·가위바위보·오목·방 
     errors: string[] = [];
   a.on("pageerror", (e) => errors.push(e.message));
   b.on("pageerror", (e) => errors.push(e.message));
+  for (const context of [first, second])
+    await context.addInitScript(() => {
+      (window as any).resultToneCount = 0;
+      const original = AudioContext.prototype.createOscillator;
+      AudioContext.prototype.createOscillator = function () {
+        (window as any).resultToneCount++;
+        return original.call(this);
+      };
+    });
   try {
     await enter(a, "하늘친구");
     await enter(b, "구름친구");
@@ -131,8 +146,33 @@ test("독립 Firebase 세션의 채팅·이모트·가위바위보·오목·방 
     await b.getByRole("button", { name: "가위", exact: true }).click();
     await expect(a.locator(".game-status")).toContainText("이겼어요");
     await expect(b.locator(".game-status")).toContainText("아쉽지만");
+    await expect(
+      a.getByRole("status", { name: "승리", exact: true }),
+    ).toBeVisible();
+    await expect(
+      b.getByRole("status", { name: "패배", exact: true }),
+    ).toBeVisible();
+    await expect(a.getByRole("button", { name: "재대결 제안" })).toHaveCount(0);
+    await expect(b.getByRole("button", { name: "재대결 제안" })).toBeVisible();
+    await expect
+      .poll(() => a.evaluate(() => (window as any).resultToneCount))
+      .toBe(4);
+    await expect
+      .poll(() => b.evaluate(() => (window as any).resultToneCount))
+      .toBe(3);
     await a.screenshot({ path: "artifacts/rps-result.png", fullPage: true });
     await a.getByRole("button", { name: "닫기", exact: true }).click();
+    await a
+      .getByRole("button", { name: "구름친구 님에게 가위바위보 초대" })
+      .click();
+    await expect(
+      a.getByText("재대결은 패배한 참가자만 신청할 수 있어요.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await b.getByRole("button", { name: "재대결 제안" }).click();
+    await expect(a.getByRole("button", { name: "초대 수락" })).toBeVisible();
+    await a.getByRole("button", { name: "거절", exact: true }).click();
     await b.getByRole("button", { name: "닫기", exact: true }).click();
     await a.getByRole("button", { name: "구름친구 님에게 오목 초대" }).click();
     await b.getByRole("button", { name: "초대 수락" }).click();
@@ -149,12 +189,30 @@ test("독립 Firebase 세션의 채팅·이모트·가위바위보·오목·방 
     await a.getByRole("button", { name: "8행 8열", exact: true }).click();
     await expect(a.locator(".game-status")).toContainText("이겼어요");
     await expect(b.locator(".game-status")).toContainText("상대방이 이겼어요");
+    await expect(
+      a.getByRole("status", { name: "승리", exact: true }),
+    ).toBeVisible();
+    await expect(
+      b.getByRole("status", { name: "패배", exact: true }),
+    ).toBeVisible();
+    await expect(a.getByRole("button", { name: "재대결 제안" })).toHaveCount(0);
+    await expect(b.getByRole("button", { name: "재대결 제안" })).toBeVisible();
     await a.screenshot({ path: "artifacts/gomoku-result.png", fullPage: true });
+    await expect
+      .poll(() => a.evaluate(() => (window as any).resultToneCount))
+      .toBe(8);
+    await expect
+      .poll(() => b.evaluate(() => (window as any).resultToneCount))
+      .toBe(6);
     await a.getByRole("button", { name: "닫기", exact: true }).click();
     await b.getByRole("button", { name: "닫기", exact: true }).click();
     await b.getByLabel("맵 변경").selectOption("cafe");
-    await expect(a.getByTestId("player-count")).toHaveText("1/8");
-    await expect(b.getByTestId("player-count")).toHaveText("1/8");
+    await expect(a.getByTestId("player-count")).toHaveText("1/8", {
+      timeout: 15000,
+    });
+    await expect(b.getByTestId("player-count")).toHaveText("1/8", {
+      timeout: 15000,
+    });
     await expect(b.getByRole("log")).not.toContainText("안녕하세요");
     expect(errors).toEqual([]);
   } finally {

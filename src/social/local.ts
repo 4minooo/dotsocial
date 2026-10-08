@@ -1,6 +1,6 @@
 import { maps, spawn, type Point, type Profile } from "../model";
 import type { Emote } from "../emotes";
-import { createGame, inGame, liveGame } from "./games";
+import { assertRematchAllowed, createGame, inGame, liveGame } from "./games";
 import {
   emptyRoom,
   type Backend,
@@ -237,12 +237,13 @@ export class LocalBackend implements Backend {
     });
     this.lastChat = this.now();
   }
-  async invite(guest: Player, type: Game["type"]) {
+  async invite(guest: Player, type: Game["type"], rematchId?: string) {
     await this.edit(this.room, (r) => {
       const host = r.players[this.player!.slot];
       if (!host || !r.players[guest.slot] || guest.uid === this.uid)
         throw new Error("상대방이 공간을 떠났어요.");
       const all = Object.values(r.games);
+      assertRematchAllowed(all, host, guest, type, this.now(), rematchId);
       if (
         all.some(
           (g) =>

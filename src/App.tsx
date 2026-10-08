@@ -14,6 +14,7 @@ import {
 import World from "./World";
 import Lobby from "./Lobby";
 import GamePanel from "./GamePanel";
+import SoundControl from "./SoundControl";
 import DirectionPad from "./DirectionPad";
 import useSocial, { mode } from "./social/useSocial";
 import { inGame } from "./social/games";
@@ -233,6 +234,7 @@ export default function App() {
           </span>
         </button>
         <nav>
+          <SoundControl map={social.room} />
           <span className="build-badge">
             <span />
             {mode === "local"

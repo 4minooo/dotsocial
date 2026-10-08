@@ -132,8 +132,8 @@ export const maps = [
   },
   {
     id: "office",
-    name: "우리 사무실",
-    tag: "잠깐의 커피 브레이크",
+    name: "바쁜 사무실",
+    tag: "바쁘다 바빠 현대사회",
     icon: "💼",
     color: "#d4dfeb",
     label: "OFFICE",
