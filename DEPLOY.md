@@ -1,6 +1,13 @@
 # GitHub · Firebase Spark · Vercel Hobby 연결
 
-이 문서는 실제 서비스 연결 절차입니다. 현재 외부 업로드나 배포는 실행하지 않았습니다. 비상업적 개인 프로젝트를 전제로 하며 무료 한도 내에서 운영합니다.
+이 문서는 실제 서비스 연결 절차입니다. 2026-10-08 GitHub 업로드, Firebase Spark 연결, Vercel Hobby 배포를 완료했습니다. 비상업적 개인 프로젝트를 전제로 하며 무료 한도 내에서 운영합니다.
+
+- 공개 앱: https://dotsocial.vercel.app/
+- 소스: https://github.com/4minooo/dotsocial
+- Firebase: https://console.firebase.google.com/project/dotsocial-4minooo/overview
+- Vercel: https://vercel.com/4mino-s-projects/dotsocial
+- DB: `dotsocial-4minooo-default-rtdb`, 싱가포르 `asia-southeast1`
+- Vercel과 GitHub 저장소를 연결했으므로 main에 push하면 Production 배포가 시작됩니다. Firebase 규칙 변경은 별도 적용해야 합니다.
 
 ## 1. Firebase 프로젝트
 
@@ -30,7 +37,7 @@ npx.cmd firebase deploy --only database --project 실제프로젝트ID
 
 ## 2. GitHub
 
-이 디렉터리를 개인 GitHub 저장소의 프로젝트 루트로 업로드합니다. 아직 저장소를 생성하거나 git push하지 않았습니다. 기존에 다른 프로젝트를 포함한 상위 폴더 전체를 올리지 않습니다.
+이 디렉터리를 개인 GitHub 저장소의 프로젝트 루트로 업로드합니다. 현재 `4minooo/dotsocial`에 업로드되어 있습니다. 기존에 다른 프로젝트를 포함한 상위 폴더 전체를 올리지 않습니다.
 
 포함: src, tests, scripts, package.json, package-lock.json, index.html, tsconfig/vite 설정, firebase.json, database.rules.json, vercel.json, 문서, .env.example.
 
@@ -58,7 +65,7 @@ npx.cmd firebase deploy --only database --project 실제프로젝트ID
 - 새로고침·브라우저 종료·회선 끊김/복구 후 참가자 수 확인
 - Firebase Console Usage에서 실제 다운로드·연결·저장량 확인
 
-에뮬레이터에서 통과한 검증이 실제 도메인·리전·회선·환경변수 검증을 대신하지 않습니다. 실제 프로젝트가 없으므로 이 확인은 아직 미실행입니다.
+2026-10-08 공개 Production 주소에서 실제 Firebase 익명 인증, 두 탭의 서로 다른 참가자, 채팅 수신, 가위바위보 승패 일치, 오목 9수와 흑 5연속 승리, 퇴장 후 2명→1명을 확인했습니다. 다른 기기, 장시간 운영, 실제 무료 한도 내 트래픽은 추가 관찰이 필요합니다.
 
 ## 무료 요금제 조건과 운영
 

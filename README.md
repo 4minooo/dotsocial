@@ -2,6 +2,10 @@
 
 복셀 캐릭터로 5개의 3D 공간을 걷고, 채팅·이모트·가위바위보·오목을 즐기는 PC 우선 웹 앱. React 19 / TypeScript / Vite / React Three Fiber 9 / Three.js / Firebase Authentication + Realtime Database.
 
+공개 앱: https://dotsocial.vercel.app/ · GitHub: https://github.com/4minooo/dotsocial
+
+2026-10-08 Firebase Spark 프로젝트 `dotsocial-4minooo`와 Vercel Hobby를 연결했습니다. 공개 주소에서 두 독립 익명 세션의 채팅, 가위바위보 결과, 오목 승리, 정상 퇴장을 확인했습니다. 다른 기기와 장시간 접속에 대한 검증은 별도입니다.
+
 ## 구현된 기능
 
 - 닉네임, 헤어 3종, 머리·상의·하의 색 5종, 모자·안경, 3D 미리보기, 설정 저장
@@ -34,7 +38,7 @@ npm.cmd run dev
 
 1. **로컬 탭 연결**: Firebase 설정 없이 기본 실행됩니다. 같은 브라우저·같은 origin의 탭이나 창끼리 IndexedDB + BroadcastChannel로 실제 데이터를 공유합니다. 다른 브라우저, 시크릿 창, 다른 기기는 연결되지 않습니다. 로컬 정원과 게임 변경은 IndexedDB 쓰기 트랜잭션으로 직렬화합니다. 정상 퇴장 시 즉시, 비정상 종료 시 약 12초 이후 참가 상태를 정리합니다. 로컬 DB의 조작 방지는 보장하지 않습니다.
 2. **Firebase 테스트**: `npm.cmd run emulators` 실행 후 홈에서 Firebase 테스트를 선택하거나 http://127.0.0.1:5190/?mode=emulator 에 접속합니다. Auth 9099 / Realtime Database 9000 / demo-dot-social 프로젝트. 서로 독립된 브라우저 세션으로 테스트할 수 있습니다. 실제 공개 서버가 아닙니다. 이 버튼과 URL 모드는 개발 빌드에서만 활성화됩니다.
-3. **온라인 연결**: `.env.local` 또는 Vercel 환경변수에 실제 Firebase 웹 설정을 넣고 재시작/재빌드하면 기본 모드가 실제 Firebase로 전환됩니다. 로컬 모드는 `?mode=local`로 선택할 수 있습니다. 실제 Firebase 프로젝트 설정과 공개 서버 테스트는 아직 사용자의 프로젝트가 없어 수행하지 않았습니다.
+3. **온라인 연결**: `.env.local` 또는 Vercel 환경변수에 실제 Firebase 웹 설정을 넣고 재시작/재빌드하면 기본 모드가 실제 Firebase로 전환됩니다. 로컬 모드는 `?mode=local`로 선택할 수 있습니다. 공개 앱의 Production/Preview 환경변수에 실제 Firebase 설정을 등록했습니다. 새로 복제한 저장소에는 실제 환경 파일이 포함되지 않으므로 로컬 실행은 기본적으로 로컬 탭 모드입니다.
 
 익명 인증은 탭별 session persistence를 사용하여 독립 탭에 별도 UID를 부여하고 새로고침 시 같은 UID를 유지합니다. 복제된 탭이 같은 UID로 접속하면 기존 참가 상태가 정리될 때까지 중복 입장을 거부합니다. 캐릭터 설정은 이 브라우저의 localStorage에 저장됩니다. 저장 정보 삭제 시 초기화됩니다.
 

@@ -10,3 +10,4 @@ playwright-report/
 .tools/
 .firebase/
 artifacts/
+.vercel/
