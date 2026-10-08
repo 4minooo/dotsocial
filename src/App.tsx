@@ -15,6 +15,7 @@ import World from "./World";
 import Lobby from "./Lobby";
 import GamePanel from "./GamePanel";
 import SoundControl from "./SoundControl";
+import { sound } from "./sound";
 import DirectionPad from "./DirectionPad";
 import useSocial, { mode } from "./social/useSocial";
 import { inGame } from "./social/games";
@@ -51,6 +52,11 @@ export default function App() {
     chatEnd = useRef<HTMLDivElement>(null),
     emoteAt = useRef(0);
   const touchKeys = useRef(new Set<string>());
+  const chatSounds = useRef({
+    room: null as string | null,
+    since: 0,
+    seen: new Set<string>(),
+  });
   const map = maps.find((m) => m.id === (social.room ?? selected))!,
     uid = social.service?.uid ?? "",
     players = Object.values(social.state.players),
@@ -98,6 +104,31 @@ export default function App() {
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ block: "nearest" });
   }, [messages.length, messages.at(-1)?.at]);
+  useEffect(() => {
+    const tracking = chatSounds.current;
+    if (tracking.room !== social.room) {
+      tracking.room = social.room;
+      tracking.since = social.service?.now() ?? Date.now();
+      tracking.seen.clear();
+    }
+    if (!social.room) return;
+    const key = (m: Message) =>
+      JSON.stringify([m.uid, m.session, m.at, m.text]);
+    const visible = new Set(messages.map(key));
+    let arrived = false;
+    for (const m of Object.values(social.state.chat).flatMap((r) =>
+      Object.values(r),
+    )) {
+      const id = key(m);
+      if (!tracking.seen.has(id) && m.at >= tracking.since && visible.has(id))
+        arrived = true;
+      tracking.seen.add(id);
+    }
+    // Remember messages even while muted to avoid replaying them when unmuting.
+    while (tracking.seen.size > 4096)
+      tracking.seen.delete(tracking.seen.values().next().value!);
+    if (arrived) sound.cue("chat");
+  }, [social.room, social.state.chat, social.service, messages]);
   const emote = useCallback(
     (kind: Emote) => {
       if (social.now - emoteAt.current < 3300) return;

@@ -1,6 +1,6 @@
 // Original procedural audio: no downloads, licensed samples, paid APIs or storage.
 export type SoundMap = "park" | "rooftop" | "office" | "cafe" | "beach";
-export type Cue = "win" | "lose";
+export type Cue = "win" | "lose" | "chat";
 export function makeAmbience(context: BaseAudioContext, map: SoundMap) {
   const length = 24,
     rate = context.sampleRate;
@@ -198,20 +198,30 @@ class SoundEngine {
     const c = this.context;
     if (!this.enabled || this.hidden || !c || c.state !== "running") return;
     const notes =
-      kind === "win" ? [523.25, 659.25, 783.99, 1046.5] : [392, 329.63, 261.63];
+      kind === "chat"
+        ? [880]
+        : kind === "win"
+          ? [523.25, 659.25, 783.99, 1046.5]
+          : [392, 329.63, 261.63];
     notes.forEach((frequency, n) => {
       const oscillator = c.createOscillator(),
         gain = c.createGain(),
         start = c.currentTime + n * 0.13;
-      oscillator.type = "triangle";
+      oscillator.type = kind === "chat" ? "sine" : "triangle";
       oscillator.frequency.value = frequency;
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.075, start + 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.48);
+      gain.gain.linearRampToValueAtTime(
+        kind === "chat" ? 0.045 : 0.075,
+        start + 0.025,
+      );
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        start + (kind === "chat" ? 0.16 : 0.48),
+      );
       oscillator.connect(gain);
       gain.connect(this.output!);
       oscillator.start(start);
-      oscillator.stop(start + 0.5);
+      oscillator.stop(start + (kind === "chat" ? 0.18 : 0.5));
       oscillator.onended = () => {
         oscillator.disconnect();
         gain.disconnect();

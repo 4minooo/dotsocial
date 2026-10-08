@@ -156,10 +156,10 @@ test("독립 Firebase 세션의 채팅·이모트·가위바위보·오목·방 
     await expect(b.getByRole("button", { name: "재대결 제안" })).toBeVisible();
     await expect
       .poll(() => a.evaluate(() => (window as any).resultToneCount))
-      .toBe(4);
+      .toBe(5);
     await expect
       .poll(() => b.evaluate(() => (window as any).resultToneCount))
-      .toBe(3);
+      .toBe(4);
     await a.screenshot({ path: "artifacts/rps-result.png", fullPage: true });
     await a.getByRole("button", { name: "닫기", exact: true }).click();
     await a
@@ -200,10 +200,10 @@ test("독립 Firebase 세션의 채팅·이모트·가위바위보·오목·방 
     await a.screenshot({ path: "artifacts/gomoku-result.png", fullPage: true });
     await expect
       .poll(() => a.evaluate(() => (window as any).resultToneCount))
-      .toBe(8);
+      .toBe(9);
     await expect
       .poll(() => b.evaluate(() => (window as any).resultToneCount))
-      .toBe(6);
+      .toBe(7);
     await a.getByRole("button", { name: "닫기", exact: true }).click();
     await b.getByRole("button", { name: "닫기", exact: true }).click();
     await b.getByLabel("맵 변경").selectOption("cafe");
