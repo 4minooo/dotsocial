@@ -24,7 +24,7 @@ const profile = {
   pants: num(0, 4),
   hairstyle: {
     ".validate":
-      "newData.val() == 'short' || newData.val() == 'bob' || newData.val() == 'spiky'",
+      "newData.val() == 'short' || newData.val() == 'bob' || newData.val() == 'spiky' || newData.val() == 'long'",
   },
   accessory: {
     ".validate":
@@ -94,6 +94,7 @@ const chatSlot = {
   ".write": `auth != null && ${mapValid} && ${slotValid} && ${own("$room", "$slot")}`,
   ".validate": "true",
   $ring: {
+    ".write": `!newData.exists() && ${member("$room")} && (data.child('at').val() <= now - 600000 || data.child('session').val() != ${roster("$room", "$slot")}.child('session').val() || !${roster("$room", "$slot")}.child('live').hasChild(data.child('session').val()))`,
     ".validate":
       "$ring.matches(/^(0|[1-9]|1[0-9])$/) && newData.hasChildren(['uid','session','nickname','text','at']) && newData.child('uid').val() == auth.uid",
     uid: { ".validate": "newData.val() == auth.uid" },
@@ -216,6 +217,9 @@ const game = {
   },
   $other: { ".validate": false },
 };
+// Only accepting an invitation or placing one stone may restart a clock.
+const clock = `(data.child('status').val() == 'invited' && newData.child('status').val() == 'active' ? (newData.child('deadline').val() > now && newData.child('deadline').val() <= now + (data.child('type').val() == 'gomoku' ? 10500 : 45500)) : (newData.child('next').val() == data.child('next').val() ? newData.child('deadline').val() == data.child('deadline').val() : (data.child('type').val() == 'gomoku' && newData.child('deadline').val() >= now + 8500 && newData.child('deadline').val() <= now + 10500)))`;
+game[".validate"] += ` && (!(${sameId}) || ${clock})`;
 const rules = {
   ".read": false,
   ".write": false,

@@ -8,7 +8,7 @@ export type Profile = {
   hair: number;
   shirt: number;
   pants: number;
-  hairstyle: "short" | "bob" | "spiky";
+  hairstyle: "short" | "bob" | "spiky" | "long";
   accessory: "none" | "cap" | "glasses";
 };
 export const defaultProfile: Profile = {
@@ -37,7 +37,7 @@ export function loadProfile(): Profile {
       hair: validIndex(p.hair),
       shirt: validIndex(p.shirt),
       pants: validIndex(p.pants),
-      hairstyle: ["short", "bob", "spiky"].includes(p.hairstyle)
+      hairstyle: ["short", "bob", "spiky", "long"].includes(p.hairstyle)
         ? p.hairstyle
         : "short",
       accessory: ["none", "cap", "glasses"].includes(p.accessory)

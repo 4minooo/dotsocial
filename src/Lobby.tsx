@@ -119,6 +119,7 @@ export default function Lobby({
                     ["short", "짧은"],
                     ["bob", "단발"],
                     ["spiky", "뾰족"],
+                    ["long", "긴머리"],
                   ] as const
                 ).map(([v, t]) => (
                   <button

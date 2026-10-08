@@ -1,4 +1,6 @@
 import type { Choice, Game, Player } from "./types";
+import { forbiddenMove, lineLengths } from "./renju";
+export const TURN_MS = 10000;
 export const choices: Record<Choice, string> = {
   rock: "✊",
   paper: "✋",
@@ -13,9 +15,13 @@ export function rpsResult(a: Choice, b: Choice): "draw" | "host" | "guest" {
       ? "host"
       : "guest";
 }
-export function gomokuWinner(board: Game["board"]): string | null {
+export function gomokuWinner(
+  board: Game["board"],
+  black?: string,
+): string | null {
   const cells = board ?? {};
   for (const [key, stone] of Object.entries(cells)) {
+    if (!stone) continue;
     const cell = Number(key),
       x = cell % 15,
       y = Math.floor(cell / 15);
@@ -38,12 +44,21 @@ export function gomokuWinner(board: Game["board"]): string | null {
         )
           break;
       }
-      if (n >= 5) return stone.uid;
+      if (
+        n >= 5 &&
+        (stone.uid !== black || lineLengths(cells, cell, stone.uid).includes(5))
+      )
+        return stone.uid;
     }
   }
   return null;
 }
-export function putStone(game: Game, uid: string, cell: number): Game {
+export function putStone(
+  game: Game,
+  uid: string,
+  cell: number,
+  now = Date.now(),
+): Game {
   if (
     game.status !== "active" ||
     game.type !== "gomoku" ||
@@ -52,17 +67,26 @@ export function putStone(game: Game, uid: string, cell: number): Game {
     cell > 224
   )
     throw new Error("지금은 착수할 수 없습니다.");
+  if (now >= game.deadline) throw new Error("착수 시간이 끝났습니다.");
   if ((game.next % 2 === 0 ? game.host : game.guest) !== uid)
     throw new Error("상대방의 차례입니다.");
   if (game.board?.[cell]) throw new Error("이미 돌이 놓여 있습니다.");
-  if (gomokuWinner(game.board)) throw new Error("이미 종료된 게임입니다.");
+  if (gomokuWinner(game.board, game.host))
+    throw new Error("이미 종료된 게임입니다.");
   const board = { ...game.board, [cell]: { uid, n: game.next } },
     next = game.next + 1;
+  if (uid === game.host) {
+    const forbidden = forbiddenMove(board, cell, game.host);
+    if (forbidden)
+      throw new Error(`${forbidden} 금수입니다. 다른 곳에 착수해 주세요.`);
+  }
   return {
     ...game,
     board,
     next,
-    status: gomokuWinner(board) || next === 225 ? "finished" : "active",
+    deadline: now + TURN_MS,
+    status:
+      gomokuWinner(board, game.host) || next === 225 ? "finished" : "active",
   };
 }
 export function inGame(game: Game, uid: string) {

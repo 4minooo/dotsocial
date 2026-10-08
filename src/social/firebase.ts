@@ -200,6 +200,7 @@ export class FirebaseBackend implements Backend {
       id = this.room;
     let active = true;
     const roster: Record<string, Roster> = {};
+    let rosterReady = false;
     const emit = () => {
       if (!active) return;
       callback({
@@ -213,13 +214,42 @@ export class FirebaseBackend implements Backend {
       });
     };
     const fail = (e: Error) => connection(`연결 오류: ${e.message}`);
+    let pruning = false;
+    const prune = async () => {
+      if (!active || pruning || !this.connected || !rosterReady) return;
+      const expired: Record<string, null> = {};
+      for (const [slot, messages] of Object.entries(state.chat)) {
+        for (const [key, m] of Object.entries(messages)) {
+          const r = roster[slot];
+          if (
+            this.now() - m.at >= 600000 ||
+            !r ||
+            r.session !== m.session ||
+            !r.live?.[m.session]
+          )
+            expired[`rooms/${id}/chat/${slot}/${key}`] = null;
+        }
+      }
+      if (!Object.keys(expired).length) return;
+      pruning = true;
+      try {
+        await update(ref(this.db), expired);
+      } catch {
+        /* A concurrent new message is protected by rules; retry next interval. */
+      } finally {
+        pruning = false;
+      }
+    };
+    const pruneTimer = setInterval(() => void prune(), 15000);
     const stops = [
       onValue(
         ref(this.db, `roster/${id}`),
         (s) => {
           Object.keys(roster).forEach((k) => delete roster[k]);
           Object.assign(roster, s.val() ?? {});
+          rosterReady = true;
           emit();
+          void prune();
         },
         fail,
       ),
@@ -237,15 +267,27 @@ export class FirebaseBackend implements Backend {
       onValue(
         ref(this.db, `rooms/${id}/chat`),
         (s) => {
-          state.chat = s.val() ?? {};
+          state.chat = Object.fromEntries(
+            Object.entries(s.val() ?? {})
+              .filter(([, messages]) => !!messages)
+              .map(([slot, messages]) => [
+                slot,
+                Object.fromEntries(
+                  Object.entries(messages as object).filter(([, m]) => !!m),
+                ),
+              ]),
+          );
           emit();
+          void prune();
         },
         fail,
       ),
       onValue(
         ref(this.db, `rooms/${id}/games`),
         (s) => {
-          state.games = s.val() ?? {};
+          state.games = Object.fromEntries(
+            Object.entries(s.val() ?? {}).filter(([, g]) => !!g),
+          ) as Record<string, Game>;
           emit();
         },
         fail,
@@ -263,6 +305,7 @@ export class FirebaseBackend implements Backend {
     this.stops = stops;
     return () => {
       active = false;
+      clearInterval(pruneTimer);
       stops.forEach((s) => s());
       this.stops = [];
     };
@@ -339,6 +382,7 @@ export class FirebaseBackend implements Backend {
     if (
       Object.values(state as Record<string, Game>).some(
         (g) =>
+          !!g &&
           liveGame(g, flat, this.now()) &&
           (inGame(g, this.uid) || inGame(g, guest.uid)),
       )
@@ -362,7 +406,7 @@ export class FirebaseBackend implements Backend {
     const snapshot =
       (await get(ref(this.db, `rooms/${this.room}/games`))).val() ?? {};
     const entry = Object.entries(snapshot as Record<string, Game>).find(
-      ([, g]) => g.id === id,
+      ([, g]) => g?.id === id,
     );
     if (!entry) throw new Error("게임이 종료되었어요.");
     let reason = "게임 상태가 변경되었습니다.";

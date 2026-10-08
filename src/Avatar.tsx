@@ -102,6 +102,14 @@ export default function Avatar({
             color={hair}
           />
         ))}
+      {profile.hairstyle === "long" && (
+        <group>
+          <Box p={[0, 1.1, -0.29]} s={[0.76, 0.94, 0.18]} color={hair} />
+          {[-0.35, 0.35].map((x) => (
+            <Box key={x} p={[x, 1.15, 0]} s={[0.15, 0.94, 0.64]} color={hair} />
+          ))}
+        </group>
+      )}
       {[-0.15, 0.15].map((x) => (
         <group key={x}>
           <Box p={[x, 1.39, 0.306]} s={[0.075, 0.1, 0.025]} color="#333342" />

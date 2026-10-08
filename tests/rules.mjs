@@ -54,6 +54,56 @@ before(async () => {
 after(async () => {
   await env?.cleanup();
 });
+
+test("긴머리 허용과 착수 없이 10초 시계 연장 거부", async () => {
+  const { a, g } = await game();
+  await assertSucceeds(
+    set(ref(a, "rooms/park/players/0/profile/hairstyle"), "long"),
+  );
+  await assertFails(
+    update(ref(a, "rooms/park/games/0"), { deadline: Date.now() + 20000 }),
+  );
+  await env.withSecurityRulesDisabled(async (c) => {
+    await update(ref(c.database(), "rooms/park/games/0"), {
+      deadline: Date.now() - 1000,
+    });
+  });
+  await assertFails(
+    set(ref(a, "rooms/park/games/0"), {
+      ...g,
+      next: 1,
+      deadline: Date.now() + 10000,
+      board: { 112: { uid: "alice", n: 0 } },
+    }),
+  );
+});
+test("다른 사람의 새 채팅 보호, 만료·퇴장 채팅만 정리 허용", async () => {
+  await reset();
+  const a = await join("alice", 0),
+    b = await join("bob", 1);
+  const message = {
+    uid: "alice",
+    session: "s-alice",
+    nickname: "테스트",
+    text: "잠깐의 대화",
+    at: Date.now(),
+  };
+  await set(ref(a, "rooms/park/chat/0/0"), message);
+  await assertFails(remove(ref(b, "rooms/park/chat/0/0")));
+  await env.withSecurityRulesDisabled(async (c) => {
+    await update(ref(c.database(), "rooms/park/chat/0/0"), {
+      at: Date.now() - 600001,
+    });
+  });
+  await assertFails(update(ref(b, "rooms/park/chat/0/0"), { text: "변조" }));
+  await assertFails(remove(ref(db("outsider"), "rooms/park/chat/0/0")));
+  await assertSucceeds(remove(ref(b, "rooms/park/chat/0/0")));
+  await env.withSecurityRulesDisabled(async (c) => {
+    await set(ref(c.database(), "rooms/park/chat/0/0"), message);
+    await remove(ref(c.database(), "roster/park/0/live/s-alice"));
+  });
+  await assertSucceeds(remove(ref(b, "rooms/park/chat/0/0")));
+});
 async function reset() {
   await env.clearDatabase();
 }
@@ -88,9 +138,17 @@ async function game(type = "gomoku") {
   await set(ref(a, "rooms/park/games/0"), g);
   await update(ref(b, "rooms/park/games/0"), {
     status: "active",
-    deadline: Date.now() + 45000,
+    deadline: Date.now() + (type === "gomoku" ? 10000 : 45000),
   });
-  return { a, b, g: { ...g, status: "active", deadline: Date.now() + 45000 } };
+  return {
+    a,
+    b,
+    g: {
+      ...g,
+      status: "active",
+      deadline: Date.now() + (type === "gomoku" ? 10000 : 45000),
+    },
+  };
 }
 test("미인증과 다른 방 읽기 거부", async () => {
   await reset();

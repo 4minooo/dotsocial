@@ -17,6 +17,16 @@ function normalize(room: LocalRoom) {
       delete room.seen[p.session];
     }
   }
+  for (const [slot, messages] of Object.entries(room.chat)) {
+    for (const [key, m] of Object.entries(messages)) {
+      if (
+        Date.now() - m.at >= 600000 ||
+        room.players[slot]?.session !== m.session
+      )
+        delete messages[key];
+    }
+    if (!Object.keys(messages).length) delete room.chat[slot];
+  }
   return room;
 }
 export class LocalBackend implements Backend {

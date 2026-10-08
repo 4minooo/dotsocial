@@ -7,6 +7,7 @@ import {
   putStone,
   salt,
   verifiedResult,
+  TURN_MS,
 } from "./social/games";
 import type { Backend, Choice, Game, Player } from "./social/types";
 export default function GamePanel({
@@ -130,7 +131,7 @@ export default function GamePanel({
           ...g,
           status: host ? "cancelled" : "declined",
         }));
-      else if (game.status === "active")
+      else if (game.status === "active" && !expired)
         await backend.mutate(game.id, (g) => ({ ...g, status: "aborted" }));
       sessionStorage.removeItem(secretKey);
       onClose();
@@ -143,11 +144,11 @@ export default function GamePanel({
         return {
           ...g,
           status: "active",
-          deadline: backend.now() + (g.type === "rps" ? 45000 : 300000),
+          deadline: backend.now() + (g.type === "rps" ? 45000 : TURN_MS),
         };
       }),
     );
-  const winner = gomokuWinner(game.board),
+  const winner = gomokuWinner(game.board, game.host),
     mine = game.next % 2 === 0 ? game.host === uid : game.guest === uid;
   const title = game.type === "rps" ? "가위바위보" : "오목";
   return (
@@ -171,12 +172,18 @@ export default function GamePanel({
         <p className="game-opponent">
           {peer?.profile.nickname ?? "떠난 친구"} 님과{" "}
           {host ? "당신이 먼저" : "상대가 먼저"} ·{" "}
-          {game.type === "gomoku" ? "15×15 자유룰" : "1대1 단판"}
+          {game.type === "gomoku" ? "15×15 렌주 금수 · 착수 10초" : "1대1 단판"}
         </p>
         {!peerPresent ? (
           <div className="game-result">상대방이 공간을 떠났어요.</div>
         ) : expired && ["active", "invited"].includes(game.status) ? (
-          <div className="game-result">제한 시간이 끝났어요.</div>
+          <div className="game-result" role="status">
+            {game.type === "gomoku" && game.status === "active"
+              ? mine
+                ? "착수 시간 초과로 패배했어요."
+                : "상대방 착수 시간 초과로 이겼어요! 🎉"
+              : "제한 시간이 끝났어요."}
+          </div>
         ) : game.status === "invited" ? (
           <div className="invite-content">
             <span>{game.type === "rps" ? "✊" : "⚫"}</span>
@@ -260,10 +267,9 @@ export default function GamePanel({
                   disabled={busy || !active || !mine || !!game.board?.[cell]}
                   onClick={() =>
                     run(() =>
-                      backend.mutate(game.id, (g) => ({
-                        ...putStone(g, uid, cell),
-                        deadline: backend.now() + 300000,
-                      })),
+                      backend.mutate(game.id, (g) =>
+                        putStone(g, uid, cell, backend.now()),
+                      ),
                     )
                   }
                 >
@@ -280,12 +286,17 @@ export default function GamePanel({
                 </button>
               ))}
             </div>
-            <p className="muted-note">금수 없음 · 5개 이상 연결하면 승리</p>
+            <p className="muted-note">
+              흑: 삼삼·사사·장목 금수, 정확히 5목 승리 · 백: 5목 이상 승리 ·
+              자유 오프닝
+            </p>
           </>
         )}
         <div className="game-bottom">
           <span>
-            {["invited", "active"].includes(game.status) && peerPresent
+            {["invited", "active"].includes(game.status) &&
+            peerPresent &&
+            !expired
               ? `${Math.max(0, Math.ceil((game.deadline - now) / 1000))}초 남음`
               : "게임 종료"}
           </span>

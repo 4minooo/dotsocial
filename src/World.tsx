@@ -185,6 +185,7 @@ function Player({
   message,
   map,
   onMove,
+  touchKeys,
 }: {
   profile: Profile;
   playing: boolean;
@@ -194,6 +195,7 @@ function Player({
   message?: string;
   map: string;
   onMove?: (p: Point, rotation: number, walking: boolean) => void;
+  touchKeys?: Set<string>;
 }) {
   const group = useRef<Group>(null),
     pos = useRef<Point>({ ...spawn }),
@@ -246,11 +248,22 @@ function Player({
       return;
     }
     const sx =
-        Number(keys.current.has("ArrowRight")) -
-        Number(keys.current.has("ArrowLeft")),
+        Number(
+          !paused &&
+            (keys.current.has("ArrowRight") || touchKeys?.has("ArrowRight")),
+        ) -
+        Number(
+          !paused &&
+            (keys.current.has("ArrowLeft") || touchKeys?.has("ArrowLeft")),
+        ),
       sy =
-        Number(keys.current.has("ArrowUp")) -
-        Number(keys.current.has("ArrowDown"));
+        Number(
+          !paused && (keys.current.has("ArrowUp") || touchKeys?.has("ArrowUp")),
+        ) -
+        Number(
+          !paused &&
+            (keys.current.has("ArrowDown") || touchKeys?.has("ArrowDown")),
+        );
     const next = move(pos.current, sx, sy, delta, mapObstacles(map)),
       dx = next.x - pos.current.x,
       dz = next.z - pos.current.z;
@@ -372,6 +385,7 @@ export default function World({
   message,
   quality = "normal",
   onMove,
+  touchKeys,
 }: {
   profile: Profile;
   preview?: boolean;
@@ -386,6 +400,7 @@ export default function World({
   message?: string;
   quality?: string;
   onMove?: (p: Point, rotation: number, walking: boolean) => void;
+  touchKeys?: Set<string>;
 }) {
   return (
     <RenderBoundary>
@@ -438,6 +453,7 @@ export default function World({
             message={message}
             map={map}
             onMove={onMove}
+            touchKeys={touchKeys}
           />
         )}
         {playing &&

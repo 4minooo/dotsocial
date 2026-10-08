@@ -591,3 +591,74 @@
     min-height: 0;
   }
 }
+.direction-pad {
+  position: absolute;
+  z-index: 5;
+  left: 18px;
+  bottom: 64px;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(2, 44px);
+  gap: 5px;
+  touch-action: none;
+  user-select: none;
+}
+.direction-pad button {
+  border: 1px solid #d9d1e7;
+  border-radius: 12px;
+  background: rgba(255, 252, 245, 0.94);
+  color: #71538e;
+  font-size: 25px;
+  box-shadow: 0 3px 8px #43334a18;
+  touch-action: none;
+  -webkit-user-select: none;
+}
+.direction-pad button:active {
+  background: #d7c6ee;
+  transform: translateY(2px);
+}
+.direction-pad button:disabled {
+  opacity: 0.4;
+}
+.direction-pad .ArrowUp {
+  grid-column: 2;
+  grid-row: 1;
+}
+.direction-pad .ArrowLeft {
+  grid-column: 1;
+  grid-row: 2;
+}
+.direction-pad .ArrowDown {
+  grid-column: 2;
+  grid-row: 2;
+}
+.direction-pad .ArrowRight {
+  grid-column: 3;
+  grid-row: 2;
+}
+.direction-pad span {
+  grid-column: 1/4;
+  text-align: center;
+  font-size: 10px;
+  color: #756c7b;
+}
+@media (max-width: 600px) {
+  .world-caption {
+    bottom: 88px;
+    left: 170px;
+    right: 12px;
+  }
+  .world-caption h2 {
+    display: none;
+  }
+  .world-caption p {
+    font-size: 9px;
+    line-height: 1.5;
+  }
+  .direction-pad {
+    left: 12px;
+    bottom: 55px;
+    grid-template-columns: repeat(3, 42px);
+    grid-template-rows: repeat(2, 42px);
+  }
+}

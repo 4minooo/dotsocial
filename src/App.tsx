@@ -14,6 +14,7 @@ import {
 import World from "./World";
 import Lobby from "./Lobby";
 import GamePanel from "./GamePanel";
+import DirectionPad from "./DirectionPad";
 import useSocial, { mode } from "./social/useSocial";
 import { inGame } from "./social/games";
 import { EMOTE_DURATION, emotes, type Emote } from "./emotes";
@@ -48,6 +49,7 @@ export default function App() {
   const chatInput = useRef<HTMLTextAreaElement>(null),
     chatEnd = useRef<HTMLDivElement>(null),
     emoteAt = useRef(0);
+  const touchKeys = useRef(new Set<string>());
   const map = maps.find((m) => m.id === (social.room ?? selected))!,
     uid = social.service?.uid ?? "",
     players = Object.values(social.state.players),
@@ -56,7 +58,12 @@ export default function App() {
       pose && social.now - pose.at < EMOTE_DURATION ? pose.kind : undefined;
   const messages = Object.values(social.state.chat)
     .flatMap((r) => Object.values(r))
-    .filter((m) => !muted.has(m.uid))
+    .filter(
+      (m) =>
+        !muted.has(m.uid) &&
+        social.now - m.at < 600000 &&
+        players.some((p) => p.uid === m.uid && p.session === m.session),
+    )
     .sort((a, b) => a.at - b.at)
     .slice(-80);
   const recent: Record<string, string> = {};
@@ -340,8 +347,14 @@ export default function App() {
                 messages={recent}
                 message={recent[uid]}
                 onMove={movement}
+                touchKeys={touchKeys.current}
               />
             </div>
+            <DirectionPad
+              key={social.room}
+              keys={touchKeys}
+              disabled={!ready || help || !!game}
+            />
             <div className="world-caption">
               <span className="pill">
                 {map.icon} {map.name}
@@ -349,7 +362,7 @@ export default function App() {
               <h2>{map.description}</h2>
               <p role="status">
                 {ready
-                  ? "방향키 이동 · Enter 채팅 · 1/2/3 이모트"
+                  ? "방향키·화면 버튼 이동 · Enter 채팅 · 1/2/3 이모트"
                   : "공간을 준비하고 있어요…"}
               </p>
             </div>
@@ -490,7 +503,9 @@ export default function App() {
                   <p className="chat-empty">
                     첫 인사를 건네보세요 👋
                     <br />
-                    <small>메시지는 이 공간 안에서만 보여요.</small>
+                    <small>
+                      최근 10분만 보여요. 퇴장하면 내 메시지도 사라져요.
+                    </small>
                   </p>
                 )}
                 {messages.map((m) => (
@@ -606,8 +621,8 @@ export default function App() {
             <p className="eyebrow">WELCOME TO YOUR LITTLE WORLD</p>
             <h2 id="help-title">작은 세상을 함께 즐겨요.</h2>
             <p>
-              방향키로 걷고 Enter로 채팅해요. 숫자 1은 손 흔들기, 2는 놀라기,
-              3은 기뻐하기입니다.
+              방향키나 화면 방향 버튼을 누르고 걷고 Enter로 채팅해요. 숫자 1은
+              손 흔들기, 2는 놀라기, 3은 기뻐하기입니다.
             </p>
             <ul>
               <li>참가자 옆 ✊ 버튼: 가위바위보 초대</li>
