@@ -146,9 +146,10 @@ export default function App() {
   }, [social.room, social.state.chat, social.service, messages]);
   const emote = useCallback(
     (kind: Emote) => {
-      if (social.now - emoteAt.current < 3300) return;
-      emoteAt.current = social.now;
-      setPose({ kind, at: social.now });
+      const at = social.service?.now() ?? Date.now();
+      if (at - emoteAt.current < 3300) return;
+      emoteAt.current = at;
+      setPose({ kind, at });
       if (social.room)
         void social.service
           ?.emote(kind)
@@ -562,7 +563,7 @@ export default function App() {
                     key={kind}
                     className={currentEmote === kind ? "active" : ""}
                     onClick={() => emote(kind as Emote)}
-                    disabled={!!currentEmote}
+                    disabled={social.now - emoteAt.current < 3300}
                     aria-label={value.label}
                   >
                     <span>{value.icon}</span>
