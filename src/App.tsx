@@ -16,6 +16,8 @@ import Lobby from "./Lobby";
 import GamePanel from "./GamePanel";
 import SoundControl from "./SoundControl";
 import { sound } from "./sound";
+import { nearbyStation, stations } from "./interactions";
+import { hasProfanity } from "./moderation";
 import DirectionPad from "./DirectionPad";
 import useSocial, { mode } from "./social/useSocial";
 import { inGame } from "./social/games";
@@ -67,12 +69,15 @@ export default function App() {
     .flatMap((r) => Object.values(r))
     .filter(
       (m) =>
+        !hasProfanity(m.text) &&
         !muted.has(m.uid) &&
         social.now - m.at < 600000 &&
         players.some((p) => p.uid === m.uid && p.session === m.session),
     )
     .sort((a, b) => a.at - b.at)
     .slice(-80);
+  const activity = players.find((p) => p.uid === uid)?.activity;
+  const nearby = social.room ? nearbyStation(social.room, pos) : undefined;
   const recent: Record<string, string> = {};
   for (const m of messages)
     if (social.now - m.at < 5000) recent[m.uid] = m.text;
@@ -85,6 +90,12 @@ export default function App() {
           social.service?.session,
     )
     .sort((a, b) => b.createdAt - a.createdAt)[0];
+  const useProp = useCallback(() => {
+    if (!social.room || help || game || !nearby) return;
+    void social.service
+      ?.interact(activity ? null : nearby.id)
+      .catch((e) => social.setError(e.message));
+  }, [social.room, social.service, help, game, nearby, activity]);
   useEffect(() => {
     if (validNickname(profile.nickname)) {
       try {
@@ -102,8 +113,12 @@ export default function App() {
     }
   }, [profile]);
   useEffect(() => {
-    chatEnd.current?.scrollIntoView({ block: "nearest" });
+    const log = chatEnd.current?.parentElement;
+    if (log) log.scrollTop = log.scrollHeight;
   }, [messages.length, messages.at(-1)?.at]);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [social.room]);
   useEffect(() => {
     const tracking = chatSounds.current;
     if (tracking.room !== social.room) {
@@ -160,10 +175,11 @@ export default function App() {
       }
       for (const [kind, value] of Object.entries(emotes))
         if (e.key === value.key && social.room) emote(kind as Emote);
+      if (e.key.toLowerCase() === "e" && !e.repeat) useProp();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [help, game, social.room, emote]);
+  }, [help, game, social.room, emote, useProp]);
   useEffect(() => {
     if (!help && !game) return;
     const previous = document.activeElement as HTMLElement;
@@ -375,6 +391,7 @@ export default function App() {
                 map={social.room}
                 quality={quality}
                 emote={currentEmote}
+                activity={activity}
                 players={remote}
                 time={social.now}
                 messages={recent}
@@ -388,6 +405,37 @@ export default function App() {
               keys={touchKeys}
               disabled={!ready || help || !!game}
             />
+            <div
+              className="interaction-hint"
+              role="group"
+              aria-label="소품 상호작용"
+            >
+              {nearby ? (
+                <button
+                  disabled={help || !!game || joining}
+                  onClick={useProp}
+                  aria-label={activity ? "소품 사용 마치기" : nearby.label}
+                >
+                  <span>{nearby.icon}</span>
+                  <div>
+                    <b>{activity ? "소품 사용 마치기" : nearby.label}</b>
+                    <small>
+                      {activity
+                        ? "이동하면 동작이 끝나요"
+                        : "E 키 또는 터치로 사용"}
+                    </small>
+                  </div>
+                  <kbd>E</kbd>
+                </button>
+              ) : (
+                <span>🧭 소품 가까이에서 E 키·터치로 놀아보세요</span>
+              )}
+              {activity && (
+                <span className="activity-state" role="status">
+                  {stations.find((s) => s.id === activity.id)?.label} 중
+                </span>
+              )}
+            </div>
             <div className="world-caption">
               <span className="pill">
                 {map.icon} {map.name}
@@ -395,7 +443,7 @@ export default function App() {
               <h2>{map.description}</h2>
               <p role="status">
                 {ready
-                  ? "방향키·화면 버튼 이동 · Enter 채팅 · 1/2/3 이모트"
+                  ? "방향키·화면 버튼 이동 · Enter 채팅 · 1~6 이모트 · E 소품"
                   : "공간을 준비하고 있어요…"}
               </p>
             </div>
@@ -655,7 +703,9 @@ export default function App() {
             <h2 id="help-title">작은 세상을 함께 즐겨요.</h2>
             <p>
               방향키나 화면 방향 버튼을 누르고 걷고 Enter로 채팅해요. 숫자 1은
-              손 흔들기, 2는 놀라기, 3은 기뻐하기입니다.
+              손 흔들기, 2는 놀라기, 3은 기뻐하기, 4는 춤추기, 5는 박수치기, 6은
+              하트 보내기입니다. 소품 가까이에서 E 키나 화면 버튼을 눌러
+              사용하고, 이동하면 소품 동작이 끝나요.
             </p>
             <ul>
               <li>참가자 옆 ✊ 버튼: 가위바위보 초대</li>

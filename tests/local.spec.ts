@@ -64,7 +64,7 @@ test("모든 맵 입장과 모바일 화면 검증", async ({ page }) => {
   ).toBe(true);
   await page.screenshot({ path: "artifacts/lobby-mobile.png", fullPage: true });
   await page.getByRole("button", { name: "느긋한 공원 입장하기" }).click();
-  for (const id of ["park", "rooftop", "office", "cafe", "beach"]) {
+  for (const id of ["park", "rooftop", "office", "cafe", "beach", "campus"]) {
     if (id !== "park") await page.getByLabel("맵 변경").selectOption(id);
     await expect(page.getByTestId("position")).toHaveAttribute(
       "data-ready",
@@ -121,6 +121,7 @@ test("모바일 터치 방향키 이동·해제·모달 차단", async ({ browse
     const marker = page.getByTestId("position");
     await expect(marker).toHaveAttribute("data-ready", "true");
     const right = page.getByRole("button", { name: "오른쪽으로 이동" });
+    await right.scrollIntoViewIfNeeded();
     // Real pointer events are shared by mouse and touch; keep a touch held across frames.
     const client = await context.newCDPSession(page);
     const box = await right.boundingBox();

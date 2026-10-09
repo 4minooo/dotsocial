@@ -1,12 +1,52 @@
-import { writeFileSync } from "node:fs";
-const mapIds = ["park", "rooftop", "office", "cafe", "beach"];
+import { readFileSync, writeFileSync } from "node:fs";
+const stations = JSON.parse(
+  readFileSync(
+    new URL("../src/interaction-data.json", import.meta.url),
+    "utf8",
+  ),
+);
+const moderation = JSON.parse(
+  readFileSync(new URL("../src/moderation-data.json", import.meta.url), "utf8"),
+);
+const separator = "";
+const strip = [
+  ..." \n\r\t0123456789._~!@#$%^&*()+,?-/\\:;[]{}'\"`",
+  "\u200b",
+  "\u200c",
+  "\u200d",
+  "\ufeff",
+];
+const cleanText = strip.reduce(
+  (expression, char) => `${expression}.replace(${JSON.stringify(char)}, '')`,
+  "newData.val()",
+);
+const letters = (word) =>
+  [...word]
+    .map((c) =>
+      /[a-z]/i.test(c)
+        ? `[${c.toLowerCase()}${String.fromCharCode(c.toUpperCase().charCodeAt(0) + 0xfee0)}${String.fromCharCode(c.toLowerCase().charCodeAt(0) + 0xfee0)}]`
+        : c,
+    )
+    .join(separator);
+const badPattern = [...moderation.terms, "ㅅㅣㅂㅏㄹ", "ㅆㅣㅂㅏㄹ"]
+  .flatMap((w) => [letters(w), letters(w.normalize("NFKC"))])
+  .join("|");
+const sibal = `시${separator}발`;
+writeFileSync(
+  new URL("../src/moderation-pattern.json", import.meta.url),
+  JSON.stringify({
+    pattern: `${badPattern}|${sibal}[^점역]|${sibal}$`,
+    strip,
+  }) + "\n",
+);
+const mapIds = ["park", "rooftop", "office", "cafe", "beach", "campus"];
 const roster = (room, slot) =>
   `root.child('roster').child(${room}).child(${slot})`;
 const own = (room, slot) =>
   `(${roster(room, slot)}.child('uid').val() == auth.uid && ${roster(room, slot)}.child('live').hasChild(${roster(room, slot)}.child('session').val()))`;
 const member = (room) =>
   `auth != null && (${Array.from({ length: 8 }, (_, i) => own(room, `'${i}'`)).join(" || ")})`;
-const mapValid = `$room.matches(/^(park|rooftop|office|cafe|beach)$/)`;
+const mapValid = `$room.matches(/^(park|rooftop|office|cafe|beach|campus)$/)`;
 const slotValid = `$slot.matches(/^[0-7]$/)`;
 const nickname = {
   ".validate":
@@ -19,20 +59,25 @@ const profile = {
   ".validate":
     "newData.hasChildren(['nickname','hair','shirt','pants','hairstyle','accessory'])",
   nickname,
-  hair: num(0, 4),
-  shirt: num(0, 4),
-  pants: num(0, 4),
+  hair: num(0, 7),
+  shirt: num(0, 7),
+  pants: num(0, 7),
+  skin: num(0, 4),
+  accessoryColor: num(0, 7),
+  face: {
+    ".validate": "newData.val().matches(/^(friendly|smile|sleepy|wink|bold)$/)",
+  },
   hairstyle: {
     ".validate":
       "newData.val() == 'short' || newData.val() == 'bob' || newData.val() == 'spiky' || newData.val() == 'long'",
   },
   accessory: {
     ".validate":
-      "newData.val() == 'none' || newData.val() == 'cap' || newData.val() == 'glasses'",
+      "newData.val().matches(/^(none|cap|glasses|headphones|ribbon|backpack|crown)$/)",
   },
   $other: { ".validate": false },
 };
-for (const key of ["hair", "shirt", "pants"])
+for (const key of ["hair", "shirt", "pants", "skin", "accessoryColor"])
   profile[key][".validate"] += " && newData.val() % 1 == 0";
 const uniqueness = mapIds
   .flatMap((m) =>
@@ -83,8 +128,15 @@ const slotPlayer = {
       "newData.hasChildren(['kind','at']) && (newData.child('at').val() == data.child('at').val() || !data.exists() || newData.child('at').val() >= data.child('at').val() + 3300)",
     kind: {
       ".validate":
-        "newData.val() == 'none' || newData.val() == 'wave' || newData.val() == 'surprise' || newData.val() == 'joy'",
+        "newData.val().matches(/^(none|wave|surprise|joy|dance|clap|love)$/)",
     },
+    at: { ".validate": "newData.isNumber() && newData.val() <= now + 5000" },
+    $other: { ".validate": false },
+  },
+  activity: {
+    ".validate": `newData.hasChildren(['id','kind','at']) && (${stations.map((s) => `($room == '${s.map}' && newData.child('id').val() == '${s.id}' && newData.child('kind').val() == '${s.kind}' && (newData.parent().child('x').val()-(${s.x}))*(newData.parent().child('x').val()-(${s.x}))+(newData.parent().child('z').val()-(${s.z}))*(newData.parent().child('z').val()-(${s.z})) <= 4.6225)`).join(" || ")})`,
+    id: { ".validate": "newData.isString()" },
+    kind: { ".validate": "newData.isString()" },
     at: { ".validate": "newData.isNumber() && newData.val() <= now + 5000" },
     $other: { ".validate": false },
   },
@@ -240,6 +292,8 @@ const chatDelay = Array.from(
   (_, i) =>
     `(!data.parent().child('${i}/at').exists() || newData.child('at').val() >= data.parent().child('${i}/at').val() + 1000)`,
 ).join(" && ");
+chatSlot.$ring.text[".validate"] =
+  `newData.isString() && newData.val().length > 0 && newData.val().length <= 200 && !${cleanText}.matches(/${badPattern}/i) && !${cleanText}.matches(/${sibal}[^점역]/i) && !${cleanText}.matches(/${sibal}$/i)`;
 chatSlot["$ring"][".validate"] +=
   ` && ((data.exists() && newData.child('at').val() == data.child('at').val() && newData.child('text').val() == data.child('text').val() && newData.child('uid').val() == data.child('uid').val()) || (${chatDelay}))`;
 writeFileSync(

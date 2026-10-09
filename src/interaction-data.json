@@ -1,0 +1,110 @@
+[
+  {
+    "id": "park-bench",
+    "map": "park",
+    "label": "벤치에 앉기",
+    "icon": "🪑",
+    "kind": "sit",
+    "x": 3.7,
+    "z": -2.8
+  },
+  {
+    "id": "park-water",
+    "map": "park",
+    "label": "꽃에 물 주기",
+    "icon": "🌷",
+    "kind": "water",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "roof-bench",
+    "map": "rooftop",
+    "label": "노을 벤치에 앉기",
+    "icon": "🌇",
+    "kind": "sit",
+    "x": -3.7,
+    "z": -3
+  },
+  {
+    "id": "roof-scope",
+    "map": "rooftop",
+    "label": "망원경으로 도시 보기",
+    "icon": "🔭",
+    "kind": "look",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "office-desk",
+    "map": "office",
+    "label": "키보드 두드리기",
+    "icon": "⌨️",
+    "kind": "type",
+    "x": 3.5,
+    "z": 2.2
+  },
+  {
+    "id": "office-coffee",
+    "map": "office",
+    "label": "커피 한 잔 마시기",
+    "icon": "☕",
+    "kind": "sip",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "cafe-coffee",
+    "map": "cafe",
+    "label": "따뜻한 커피 마시기",
+    "icon": "☕",
+    "kind": "sip",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "cafe-chair",
+    "map": "cafe",
+    "label": "카페 의자에 앉기",
+    "icon": "🪑",
+    "kind": "sit",
+    "x": 2.8,
+    "z": 2
+  },
+  {
+    "id": "beach-castle",
+    "map": "beach",
+    "label": "모래성 만들기",
+    "icon": "🏰",
+    "kind": "build",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "beach-mat",
+    "map": "beach",
+    "label": "파라솔 아래 쉬기",
+    "icon": "🏖️",
+    "kind": "sit",
+    "x": -4,
+    "z": -2.7
+  },
+  {
+    "id": "campus-board",
+    "map": "campus",
+    "label": "동아리 게시판 읽기",
+    "icon": "📖",
+    "kind": "read",
+    "x": -1.8,
+    "z": 2.8
+  },
+  {
+    "id": "campus-bench",
+    "map": "campus",
+    "label": "벚꽃 아래 앉기",
+    "icon": "🌸",
+    "kind": "sit",
+    "x": 5,
+    "z": 2.5
+  }
+]

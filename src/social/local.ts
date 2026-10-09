@@ -1,5 +1,7 @@
 import { maps, spawn, type Point, type Profile } from "../model";
 import type { Emote } from "../emotes";
+import { interaction } from "../interactions";
+import { validateChat } from "../moderation";
 import { assertRematchAllowed, createGame, inGame, liveGame } from "./games";
 import {
   emptyRoom,
@@ -207,7 +209,9 @@ export class LocalBackend implements Backend {
   }
   move(point: Point, rotation: number) {
     return this.playerEdit((p) => {
+      const moved = p.x !== point.x || p.z !== point.z;
       Object.assign(p, point, { rotation, at: this.now() });
+      if (moved) delete p.activity;
     });
   }
   emote(kind: Emote) {
@@ -218,6 +222,7 @@ export class LocalBackend implements Backend {
     });
   }
   async chat(text: string) {
+    validateChat(text);
     text = text.trim();
     if (!text || text.length > 200)
       throw new Error("메시지는 1~200자로 입력해 주세요.");
@@ -236,6 +241,12 @@ export class LocalBackend implements Backend {
       };
     });
     this.lastChat = this.now();
+  }
+  interact(id: string | null) {
+    return this.playerEdit((p) => {
+      if (id) p.activity = interaction(this.room, p, id, this.now());
+      else delete p.activity;
+    });
   }
   async invite(guest: Player, type: Game["type"], rematchId?: string) {
     await this.edit(this.room, (r) => {

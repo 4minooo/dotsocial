@@ -8,11 +8,13 @@ export default function WorldLabel({
   nickname,
   emote,
   message,
+  activity,
 }: {
   anchor: RefObject<Group | null>;
   nickname: string;
   emote?: Emote;
   message?: string;
+  activity?: string;
 }) {
   const { gl, size, camera } = useThree(),
     node = useRef<HTMLDivElement | null>(null),
@@ -55,10 +57,16 @@ export default function WorldLabel({
       inner.appendChild(bubble);
     }
     const name = document.createElement("span");
+    if (activity) {
+      const tag = document.createElement("span");
+      tag.className = "activity-label";
+      tag.textContent = activity;
+      inner.appendChild(tag);
+    }
     name.className = "nickname-label";
     name.textContent = nickname;
     inner.appendChild(name);
-  }, [nickname, emote, message, gl]);
+  }, [nickname, emote, message, activity, gl]);
   useFrame(() => {
     if (!anchor.current || !node.current) return;
     anchor.current.getWorldPosition(vector.current);

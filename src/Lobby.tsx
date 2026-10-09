@@ -164,6 +164,10 @@ export default function Lobby({
                     ["none", "없음"],
                     ["cap", "모자"],
                     ["glasses", "안경"],
+                    ["headphones", "헤드폰"],
+                    ["ribbon", "리본"],
+                    ["backpack", "배낭"],
+                    ["crown", "왕관"],
                   ] as const
                 ).map(([v, t]) => (
                   <button
@@ -177,6 +181,51 @@ export default function Lobby({
                 ))}
               </div>
             </div>
+            <div className="custom-row">
+              <span>얼굴</span>
+              <div className="segmented">
+                {(
+                  [
+                    ["friendly", "기본"],
+                    ["smile", "미소"],
+                    ["sleepy", "졸린"],
+                    ["wink", "윙크"],
+                    ["bold", "도도한"],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    aria-label={`${label} 얼굴`}
+                    aria-pressed={profile.face === v}
+                    className={profile.face === v ? "active" : ""}
+                    onClick={() => change("face", v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {(["skin", "accessoryColor"] as const).map((part) => (
+              <div className="custom-row" key={part}>
+                <span>{part === "skin" ? "피부색" : "액세서리 색"}</span>
+                <div className="swatches">
+                  {palettes[part].map((color, i) => (
+                    <button
+                      key={color}
+                      className={
+                        profile[part] === i ? "swatch active" : "swatch"
+                      }
+                      style={{ backgroundColor: color }}
+                      aria-label={`${part === "skin" ? "피부" : "액세서리"} 색상 ${i + 1}`}
+                      aria-pressed={profile[part] === i}
+                      onClick={() => change(part, i)}
+                    >
+                      {profile[part] === i && <Check size={12} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
         <p className={storageWarning ? "save-note field-error" : "save-note"}>
@@ -192,7 +241,7 @@ export default function Lobby({
             <p className="eyebrow">02 · FIND YOUR SPACE</p>
             <h2>어디서 만날까요?</h2>
           </div>
-          <span className="spaces-note">5개의 작은 공간</span>
+          <span className="spaces-note">{maps.length}개의 작은 공간</span>
         </div>
         <div className="map-grid">
           {maps.map((m) => (

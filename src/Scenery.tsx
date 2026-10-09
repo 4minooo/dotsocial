@@ -14,15 +14,28 @@ const tables = [
   { x: 3.8, z: 2 },
 ];
 export function mapObstacles(map: string): Obstacle[] {
-  if (map === "park") return obstacles;
-  if (map === "office") return desks.map((p) => ({ ...p, w: 2.5, d: 2.5 }));
+  const prop = { x: -1.8, z: 2.8, w: 0.85, d: 0.7 };
+  if (map === "campus")
+    return [
+      ...[-4.7, 4.7].flatMap((x) =>
+        [-5, 0, 5].map((z) => ({ x, z, w: 1.7, d: 1.7 })),
+      ),
+      { x: 5, z: 2.5, w: 1.8, d: 0.7 },
+      { x: -5, z: 2.5, w: 1.8, d: 0.7 },
+      prop,
+    ];
+  if (map === "park") return [...obstacles, prop];
+  if (map === "office")
+    return [...desks.map((p) => ({ ...p, w: 2.5, d: 2.5 })), prop];
   if (map === "cafe")
     return [
+      prop,
       ...tables.map((p) => ({ ...p, w: 1.8, d: 1.8 })),
       { x: 0, z: -5.5, w: 8, d: 1.5 },
     ];
   if (map === "rooftop")
     return [
+      prop,
       { x: -3.7, z: -3, w: 3.3, d: 1 },
       { x: 3.8, z: 0, w: 2, d: 2 },
       ...[-5.8, 5.8].flatMap((x) =>
@@ -30,6 +43,7 @@ export function mapObstacles(map: string): Obstacle[] {
       ),
     ];
   return [
+    prop,
     { x: -4, z: -3, w: 2, d: 1.2 },
     { x: 4, z: -3, w: 2, d: 1.2 },
     { x: 3.8, z: 3, w: 1.4, d: 2 },

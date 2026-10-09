@@ -1,5 +1,6 @@
 import type { Point, Profile } from "../model";
 import type { Emote } from "../emotes";
+import type { Activity } from "../interactions";
 export type Player = Point & {
   uid: string;
   session: string;
@@ -8,6 +9,7 @@ export type Player = Point & {
   rotation: number;
   at: number;
   emote: { kind: Emote | "none"; at: number };
+  activity?: Activity;
 };
 export type Message = {
   uid: string;
@@ -67,6 +69,7 @@ export interface Backend {
   ): () => void;
   move(point: Point, rotation: number): Promise<void>;
   emote(kind: Emote): Promise<void>;
+  interact(id: string | null): Promise<void>;
   chat(text: string): Promise<void>;
   invite(guest: Player, type: Game["type"], rematchId?: string): Promise<void>;
   mutate(id: string, change: (game: Game) => Game): Promise<void>;

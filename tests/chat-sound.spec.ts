@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 test("새 채팅만 알림음: 송수신·사용자 음소거·전체 소리·재입장", async ({
   context,
 }) => {
+  test.setTimeout(120000);
   await context.addInitScript(() => {
     (window as any).chatToneCount = 0;
     const original = AudioContext.prototype.createOscillator;

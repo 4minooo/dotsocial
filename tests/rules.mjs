@@ -54,6 +54,97 @@ before(async () => {
 after(async () => {
   await env?.cleanup();
 });
+test("백경광장·확장 외형·6가지 표현과 소품 거리·종류 검증", async () => {
+  await reset();
+  const a = await join("alice", 0, "campus");
+  await assertSucceeds(
+    update(ref(a, "rooms/campus/players/0/profile"), {
+      face: "wink",
+      skin: 4,
+      hair: 7,
+      shirt: 7,
+      pants: 7,
+      accessory: "headphones",
+      accessoryColor: 7,
+    }),
+  );
+  await assertFails(
+    update(ref(a, "rooms/campus/players/0/profile"), { skin: 5 }),
+  );
+  await assertFails(
+    update(ref(a, "rooms/campus/players/0/profile"), { face: "invalid" }),
+  );
+  const current = Date.now();
+  for (const [i, kind] of ["dance", "clap", "love"].entries())
+    await assertSucceeds(
+      set(ref(a, "rooms/campus/players/0/emote"), {
+        kind,
+        at: current - 6600 + i * 3300,
+      }),
+    );
+  await assertSucceeds(
+    set(ref(a, "rooms/campus/players/0/activity"), {
+      id: "campus-board",
+      kind: "read",
+      at: Date.now(),
+    }),
+  );
+  await assertFails(
+    set(ref(a, "rooms/campus/players/0/activity"), {
+      id: "park-water",
+      kind: "water",
+      at: Date.now(),
+    }),
+  );
+  await assertFails(
+    set(ref(a, "rooms/campus/players/0/activity"), {
+      id: "campus-board",
+      kind: "sip",
+      at: Date.now(),
+    }),
+  );
+  await assertSucceeds(
+    update(ref(a, "rooms/campus/players/0"), { x: 6, z: 6, activity: null }),
+  );
+  await assertFails(
+    set(ref(a, "rooms/campus/players/0/activity"), {
+      id: "campus-board",
+      kind: "read",
+      at: Date.now(),
+    }),
+  );
+  await assertFails(join("alice", 1, "park"));
+});
+test("SDK 직접 요청에도 욕설·흔한 우회를 거부하고 정상 문장은 저장", async () => {
+  await reset();
+  const a = await join("alice", 0);
+  const message = (text) => ({
+    uid: "alice",
+    session: "s-alice",
+    nickname: "테스트",
+    text,
+    at: Date.now(),
+  });
+  for (const text of [
+    "씨발",
+    "시발",
+    "병1신",
+    "ㅅ.ㅂ",
+    "ㅅㅣㅂㅏㄹ",
+    "f.u.c.k",
+    "ＦＵＣＫ",
+    "시\u200b발",
+    "안녕\n씨발",
+    "시발점 씨발",
+  ])
+    await assertFails(set(ref(a, "rooms/park/chat/0/0"), message(text)));
+  await assertSucceeds(
+    set(
+      ref(a, "rooms/park/chat/0/0"),
+      message("시발점과 시발역, 새끼 고양이 이야기"),
+    ),
+  );
+});
 
 test("긴머리 허용과 착수 없이 10초 시계 연장 거부", async () => {
   const { a, g } = await game();
@@ -168,7 +259,7 @@ test("본인 이동 권한·좌표·외형·허용 필드 검증", async () => {
   await assertFails(update(ref(b, "rooms/park/players/0"), { x: 2 }));
   await assertFails(update(ref(a, "rooms/park/players/0"), { x: 90 }));
   await assertFails(
-    update(ref(a, "rooms/park/players/0/profile"), { hair: 5 }),
+    update(ref(a, "rooms/park/players/0/profile"), { hair: 8 }),
   );
   await assertFails(update(ref(a, "rooms/park/players/0"), { admin: true }));
 });

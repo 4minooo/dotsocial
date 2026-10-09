@@ -1,5 +1,6 @@
 // Original procedural audio: no downloads, licensed samples, paid APIs or storage.
-export type SoundMap = "park" | "rooftop" | "office" | "cafe" | "beach";
+export type SoundMap =
+  "park" | "rooftop" | "office" | "cafe" | "beach" | "campus";
 export type Cue = "win" | "lose" | "chat";
 export function makeAmbience(context: BaseAudioContext, map: SoundMap) {
   const length = 24,
@@ -57,7 +58,7 @@ export function makeAmbience(context: BaseAudioContext, map: SoundMap) {
       right[start + i] += v * 0.75;
     }
   };
-  if (map === "park")
+  if (map === "park" || map === "campus")
     for (let at = 0.5; at < 23; at += 1.8 + Math.random() * 1.9) {
       const pan = Math.random() * 2 - 1;
       for (let n = 0; n < 3; n++)

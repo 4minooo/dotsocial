@@ -1,7 +1,45 @@
 export const palettes = {
-  hair: ["#463331", "#8b573b", "#dbc08a", "#303244", "#b68cc6"],
-  shirt: ["#9e8ad1", "#749e82", "#e6a37d", "#729db7", "#e6c869"],
-  pants: ["#494b64", "#657578", "#805e52", "#d7cab0", "#3e596c"],
+  hair: [
+    "#463331",
+    "#8b573b",
+    "#dbc08a",
+    "#303244",
+    "#b68cc6",
+    "#e8ddd0",
+    "#c97e9c",
+    "#659f98",
+  ],
+  shirt: [
+    "#9e8ad1",
+    "#749e82",
+    "#e6a37d",
+    "#729db7",
+    "#e6c869",
+    "#f4eee5",
+    "#373d4d",
+    "#d77586",
+  ],
+  pants: [
+    "#494b64",
+    "#657578",
+    "#805e52",
+    "#d7cab0",
+    "#3e596c",
+    "#ebded7",
+    "#282c35",
+    "#97ad8a",
+  ],
+  skin: ["#efbf99", "#f9dac4", "#d89c73", "#af7857", "#785340"],
+  accessoryColor: [
+    "#749e82",
+    "#9e8ad1",
+    "#e6a37d",
+    "#729db7",
+    "#e6c869",
+    "#f4eee5",
+    "#373d4d",
+    "#d77586",
+  ],
 };
 export type Profile = {
   nickname: string;
@@ -9,7 +47,11 @@ export type Profile = {
   shirt: number;
   pants: number;
   hairstyle: "short" | "bob" | "spiky" | "long";
-  accessory: "none" | "cap" | "glasses";
+  accessory:
+    "none" | "cap" | "glasses" | "headphones" | "ribbon" | "backpack" | "crown";
+  skin: number;
+  accessoryColor: number;
+  face: "friendly" | "smile" | "sleepy" | "wink" | "bold";
 };
 export const defaultProfile: Profile = {
   nickname: "도트친구",
@@ -18,6 +60,9 @@ export const defaultProfile: Profile = {
   pants: 0,
   hairstyle: "short",
   accessory: "none",
+  skin: 0,
+  accessoryColor: 0,
+  face: "friendly",
 };
 export const storageKey = "dot-social.profile.v1";
 export function cleanNickname(value: string) {
@@ -34,13 +79,26 @@ export function loadProfile(): Profile {
       nickname: validNickname(p.nickname)
         ? cleanNickname(p.nickname)
         : defaultProfile.nickname,
-      hair: validIndex(p.hair),
-      shirt: validIndex(p.shirt),
-      pants: validIndex(p.pants),
+      hair: validIndex(p.hair, 8),
+      shirt: validIndex(p.shirt, 8),
+      pants: validIndex(p.pants, 8),
+      skin: validIndex(p.skin, 5),
+      accessoryColor: validIndex(p.accessoryColor, 8),
+      face: ["friendly", "smile", "sleepy", "wink", "bold"].includes(p.face)
+        ? p.face
+        : "friendly",
       hairstyle: ["short", "bob", "spiky", "long"].includes(p.hairstyle)
         ? p.hairstyle
         : "short",
-      accessory: ["none", "cap", "glasses"].includes(p.accessory)
+      accessory: [
+        "none",
+        "cap",
+        "glasses",
+        "headphones",
+        "ribbon",
+        "backpack",
+        "crown",
+      ].includes(p.accessory)
         ? p.accessory
         : "none",
     };
@@ -48,8 +106,10 @@ export function loadProfile(): Profile {
     return { ...defaultProfile };
   }
 }
-function validIndex(n: unknown) {
-  return Number.isInteger(n) && Number(n) >= 0 && Number(n) < 5 ? Number(n) : 0;
+function validIndex(n: unknown, length: number) {
+  return Number.isInteger(n) && Number(n) >= 0 && Number(n) < length
+    ? Number(n)
+    : 0;
 }
 export type Point = { x: number; z: number };
 export type Obstacle = Point & { w: number; d: number };
@@ -112,6 +172,15 @@ export function move(
   return next;
 }
 export const maps = [
+  {
+    id: "campus",
+    name: "부경대학교 백경광장",
+    tag: "벚꽃길에서 만나는 캠퍼스",
+    icon: "🌸",
+    color: "#eee0e5",
+    label: "PKNU",
+    description: "벚꽃 아래, 우리들의 캠퍼스 산책.",
+  },
   {
     id: "park",
     name: "느긋한 공원",

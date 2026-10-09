@@ -21,6 +21,9 @@ import {
 import Scenery, { mapObstacles } from "./Scenery";
 import WorldLabel from "./WorldLabel";
 import { EMOTE_DURATION, type Emote } from "./emotes";
+import { stations, type Activity } from "./interactions";
+import WorldDetails, { InteractionProps } from "./WorldDetails";
+import Campus from "./Campus";
 import type { Player as NetworkPlayer } from "./social/types";
 
 function Tree({ x, z, index }: Point & { index: number }) {
@@ -186,6 +189,7 @@ function Player({
   map,
   onMove,
   touchKeys,
+  activity,
 }: {
   profile: Profile;
   playing: boolean;
@@ -196,6 +200,7 @@ function Player({
   map: string;
   onMove?: (p: Point, rotation: number, walking: boolean) => void;
   touchKeys?: Set<string>;
+  activity?: Activity;
 }) {
   const group = useRef<Group>(null),
     pos = useRef<Point>({ ...spawn }),
@@ -275,7 +280,20 @@ function Player({
         Math.atan2(Math.sin(turn), Math.cos(turn)) *
         (1 - Math.exp(-delta * 12));
     }
-    group.current.position.set(next.x, 0, next.z);
+    const seat =
+      activity && ["sit", "type"].includes(activity.kind) && !isMoving
+        ? stations.find((s) => s.id === activity.id)
+        : undefined;
+    group.current.position.set(seat?.x ?? next.x, 0, seat?.z ?? next.z);
+    if (seat) group.current.rotation.y = 0;
+    else if (activity && !isMoving) {
+      const target = stations.find((s) => s.id === activity.id);
+      if (target)
+        group.current.rotation.y = Math.atan2(
+          target.x - next.x,
+          target.z - next.z,
+        );
+    }
     pos.current = next;
     const changed = isMoving !== moving.current;
     if (changed) {
@@ -290,7 +308,13 @@ function Player({
   return (
     <group ref={group} position={playing ? [spawn.x, 0, spawn.z] : [0, 0, 0]}>
       <group scale={playing ? 1.15 : 1}>
-        <Avatar profile={profile} walking={walking} wave={wave} emote={emote} />
+        <Avatar
+          profile={profile}
+          walking={walking}
+          wave={wave}
+          emote={emote}
+          activity={walking ? undefined : activity?.kind}
+        />
       </group>
       {playing && (
         <WorldLabel
@@ -298,6 +322,11 @@ function Player({
           nickname={profile.nickname}
           emote={emote ?? (wave ? "wave" : undefined)}
           message={message}
+          activity={
+            activity
+              ? stations.find((s) => s.id === activity.id)?.label
+              : undefined
+          }
         />
       )}
     </group>
@@ -321,14 +350,18 @@ function RemotePlayer({
     const g = group.current,
       distance = Math.hypot(g.position.x - player.x, g.position.z - player.z),
       blend = 1 - Math.exp(-delta * 14);
-    g.position.x += (player.x - g.position.x) * blend;
-    g.position.z += (player.z - g.position.z) * blend;
+    const seat =
+      player.activity && ["sit", "type"].includes(player.activity.kind)
+        ? stations.find((s) => s.id === player.activity?.id)
+        : undefined;
+    g.position.x += ((seat?.x ?? player.x) - g.position.x) * blend;
+    g.position.z += ((seat?.z ?? player.z) - g.position.z) * blend;
     g.rotation.y +=
       Math.atan2(
-        Math.sin(player.rotation - g.rotation.y),
-        Math.cos(player.rotation - g.rotation.y),
+        Math.sin((seat ? 0 : player.rotation) - g.rotation.y),
+        Math.cos((seat ? 0 : player.rotation) - g.rotation.y),
       ) * blend;
-    const m = distance > 0.035;
+    const m = !player.activity && distance > 0.035;
     if (m !== moving.current) {
       moving.current = m;
       setWalking(m);
@@ -341,13 +374,23 @@ function RemotePlayer({
   return (
     <group ref={group} position={initial.current}>
       <group scale={1.15}>
-        <Avatar profile={player.profile} walking={walking} emote={emote} />
+        <Avatar
+          profile={player.profile}
+          walking={walking}
+          emote={emote}
+          activity={player.activity?.kind}
+        />
       </group>
       <WorldLabel
         anchor={group}
         nickname={player.profile.nickname}
         emote={emote}
         message={message}
+        activity={
+          player.activity
+            ? stations.find((s) => s.id === player.activity?.id)?.label
+            : undefined
+        }
       />
     </group>
   );
@@ -386,6 +429,7 @@ export default function World({
   quality = "normal",
   onMove,
   touchKeys,
+  activity,
 }: {
   profile: Profile;
   preview?: boolean;
@@ -401,16 +445,17 @@ export default function World({
   quality?: string;
   onMove?: (p: Point, rotation: number, walking: boolean) => void;
   touchKeys?: Set<string>;
+  activity?: Activity;
 }) {
   return (
     <RenderBoundary>
       <Canvas
         orthographic
         camera={{ position: [14, 13, 14], zoom: 35, near: 0.1, far: 100 }}
-        dpr={quality === "low" ? 0.55 : 0.9}
+        dpr={quality === "low" ? 0.65 : [1, 1.5]}
         shadows={quality !== "low"}
         gl={{
-          antialias: false,
+          antialias: quality !== "low",
           alpha: true,
           powerPreference: "high-performance",
         }}
@@ -421,10 +466,14 @@ export default function World({
         }
       >
         <CameraFit preview={preview} />
-        <ambientLight intensity={1.7} />
+        <ambientLight intensity={1.1} />
+        <hemisphereLight
+          args={[map === "rooftop" ? "#ffdac5" : "#f5f0e7", "#8b9480", 1.2]}
+        />
         <directionalLight
           position={[-5, 12, 6]}
-          intensity={2.4}
+          intensity={1.7}
+          color={map === "rooftop" ? "#ffd0ac" : "#fff3db"}
           castShadow={quality !== "low"}
           shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-10}
@@ -438,10 +487,18 @@ export default function World({
             <Box p={[0, -0.16, 0]} s={[2.6, 0.28, 2.6]} color="#cfcae2" />
             <Box p={[0, -0.01, 0]} s={[2.6, 0.035, 2.6]} color="#e6e1f1" />
           </>
+        ) : map === "campus" ? (
+          <Campus />
         ) : map === "park" ? (
           <Park />
         ) : (
           <Scenery map={map} />
+        )}
+        {!preview && (
+          <>
+            <WorldDetails map={map} low={quality === "low"} />
+            <InteractionProps map={map} />
+          </>
         )}
         {(preview || playing) && (
           <Player
@@ -454,6 +511,7 @@ export default function World({
             map={map}
             onMove={onMove}
             touchKeys={touchKeys}
+            activity={activity}
           />
         )}
         {playing &&

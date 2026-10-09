@@ -21,6 +21,8 @@ import {
 } from "firebase/database";
 import { maps, spawn, type Profile, type Point } from "../model";
 import type { Emote } from "../emotes";
+import { interaction } from "../interactions";
+import { validateChat } from "../moderation";
 import { assertRematchAllowed, createGame, inGame, liveGame } from "./games";
 import {
   emptyRoom,
@@ -329,11 +331,18 @@ export class FirebaseBackend implements Backend {
   }
   async move(point: Point, rotation: number) {
     if (!this.player) return;
+    const moved = this.player.x !== point.x || this.player.z !== point.z;
     Object.assign(this.player, point, { rotation, at: this.now() });
+    if (moved) delete this.player.activity;
     if (!this.connected) return;
     await update(
       ref(this.db, `rooms/${this.room}/players/${this.player.slot}`),
-      { ...point, rotation, at: this.player.at },
+      {
+        ...point,
+        rotation,
+        at: this.player.at,
+        ...(moved ? { activity: null } : {}),
+      },
     );
   }
   async emote(kind: Emote) {
@@ -347,6 +356,7 @@ export class FirebaseBackend implements Backend {
     );
   }
   async chat(text: string) {
+    validateChat(text);
     text = text.trim();
     if (!text || text.length > 200)
       throw new Error("메시지는 1~200자로 입력해 주세요.");
@@ -368,6 +378,19 @@ export class FirebaseBackend implements Backend {
       },
     );
     this.lastChat = this.now();
+  }
+  async interact(id: string | null) {
+    if (!this.player || !this.connected)
+      throw new Error("연결 후 다시 시도해 주세요.");
+    const activity = id
+      ? interaction(this.room, this.player, id, this.now())
+      : null;
+    if (activity) this.player.activity = activity;
+    else delete this.player.activity;
+    await update(
+      ref(this.db, `rooms/${this.room}/players/${this.player.slot}`),
+      { activity },
+    );
   }
   async invite(guest: Player, type: Game["type"], rematchId?: string) {
     if (!this.player || !this.connected)
